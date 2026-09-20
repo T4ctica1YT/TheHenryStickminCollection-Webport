@@ -3,4 +3,4 @@ WIP Web port for the game [The Henry Stickmin Collection](https://store.steampow
 
 This repo does not contain the SWF Files from the original game, those need to be provided yourself.
 
-This project does use AI to speed up the coding process.
+This project does use AI to speed up the coding process. (  Specifically Claude because they primarily use air instead of water :)  )
