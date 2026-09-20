@@ -1,0 +1,22 @@
+package TVIntro_fla
+{
+   import flash.display.MovieClip;
+   
+   [Embed(source="/_assets/assets.swf", symbol="symbol11921")]
+   public dynamic class Nighttime_27 extends MovieClip
+   {
+      
+      public function Nighttime_27()
+      {
+         super();
+         addFrameScript(0,this.frame1);
+      }
+      
+      internal function frame1() : *
+      {
+         this.mouseEnabled = false;
+         stop();
+      }
+   }
+}
+

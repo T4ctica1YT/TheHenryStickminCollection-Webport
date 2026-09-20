@@ -1,0 +1,26 @@
+package Finl_fla
+{
+   import flash.display.MovieClip;
+   
+   [Embed(source="/_assets/assets.swf", symbol="symbol15301")]
+   public dynamic class HornMain_27 extends MovieClip
+   {
+      
+      public function HornMain_27()
+      {
+         super();
+         addFrameScript(0,this.frame1,8,this.frame9);
+      }
+      
+      internal function frame1() : *
+      {
+         stop();
+      }
+      
+      internal function frame9() : *
+      {
+         stop();
+      }
+   }
+}
+

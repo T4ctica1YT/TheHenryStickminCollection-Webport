@@ -1,0 +1,22 @@
+package Timed1Jump_fla
+{
+   import flash.display.MovieClip;
+   
+   [Embed(source="/_assets/assets.swf", symbol="symbol5906")]
+   public dynamic class Nighttime_12 extends MovieClip
+   {
+      
+      public function Nighttime_12()
+      {
+         super();
+         addFrameScript(0,this.frame1);
+      }
+      
+      internal function frame1() : *
+      {
+         this.mouseEnabled = false;
+         stop();
+      }
+   }
+}
+

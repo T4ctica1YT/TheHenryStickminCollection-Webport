@@ -1,0 +1,24 @@
+{
+  "runtime": "../runtime",
+  "entryPoint": "Henry/scripts/com/innersloth/henry/Main.as",
+  "sourceRoots": [
+    "Henry/scripts",
+    "HenryFtC/scripts",
+    "HenryCtM/scripts",
+    "HenryCtM2/scripts"
+  ],
+  "chapters": [
+    "Henry",
+    "HenryFtC",
+    "HenryCtM",
+    "HenryCtM2"
+  ],
+  "airApisReplaced": [
+    "flash.filesystem.File",
+    "flash.filesystem.FileMode",
+    "flash.filesystem.FileStream",
+    "flash.desktop.NativeApplication",
+    "com.amanitadesign.steam.FRESteamWorks"
+  ],
+  "note": "ActionScript source must be compiled to AVM2 ABC before a browser can execute it. The current runtime uses the original SWF assets as the compiled bytecode payload."
+}

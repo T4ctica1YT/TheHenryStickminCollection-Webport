@@ -1,0 +1,45 @@
+package VentScene_fla
+{
+   import com.innersloth.henry.ItA.ItAMain;
+   import flash.display.MovieClip;
+   import flash.display.SimpleButton;
+   import flash.events.MouseEvent;
+   
+   [Embed(source="/_assets/assets.swf", symbol="symbol20505")]
+   public dynamic class BGS_Keymain_8 extends MovieClip
+   {
+      
+      public var keyy:SimpleButton;
+      
+      public function BGS_Keymain_8()
+      {
+         super();
+         addFrameScript(0,this.frame1,26,this.frame27);
+      }
+      
+      internal function frame1() : *
+      {
+         stop();
+         if(Boolean(ItAMain.instance) && ItAMain.instance.goronStage > ItAMain.BiggoronNotStarted)
+         {
+            this.parent.removeChild(this);
+         }
+         else
+         {
+            addEventListener(MouseEvent.CLICK,function keyclick(param1:*):*
+            {
+               ItAMain.instance.SetBiggoronStage(ItAMain.BiggoronKeyGot);
+               removeEventListener(MouseEvent.CLICK,keyclick);
+               play();
+            });
+         }
+      }
+      
+      internal function frame27() : *
+      {
+         this.enabled = false;
+         stop();
+      }
+   }
+}
+

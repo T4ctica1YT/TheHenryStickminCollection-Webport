@@ -1,0 +1,26 @@
+package PokeballScene_fla
+{
+   import com.innersloth.henry.StD.StDMain;
+   import flash.display.MovieClip;
+   
+   [Embed(source="/_assets/assets.swf", symbol="symbol30230")]
+   public dynamic class lugipainting_3 extends MovieClip
+   {
+      
+      public function lugipainting_3()
+      {
+         super();
+         addFrameScript(0,this.frame1);
+      }
+      
+      internal function frame1() : *
+      {
+         stop();
+         if(Boolean(StDMain.instance))
+         {
+            StDMain.instance.SetupPainting(this);
+         }
+      }
+   }
+}
+

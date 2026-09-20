@@ -1,0 +1,50 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>The Henry Stickmin Collection</title>
+  <style>
+    * { box-sizing: border-box; }
+    html, body { width: 100%; height: 100%; margin: 0; }
+    body { display: grid; place-items: center; overflow: hidden; background: #111; }
+    .game-frame { width: min(1280px, 100vw); aspect-ratio: 16 / 9; background: #000; }
+    #player { display: block; width: 100%; height: 100%; border: 0; }
+    #consoleButton { position: fixed; right: 14px; bottom: 14px; z-index: 3; padding: 8px 12px; border: 1px solid #747474; border-radius: 4px; background: #202020; color: #fff; font: 14px Consolas, monospace; cursor: pointer; }
+    #console { position: fixed; right: 14px; bottom: 58px; z-index: 2; display: none; width: min(620px, calc(100vw - 28px)); max-height: 30vh; overflow: auto; padding: 10px; border: 1px solid #747474; border-radius: 4px; background: rgba(0, 0, 0, .94); color: #c6e7c0; font: 12px/1.45 Consolas, monospace; white-space: pre-wrap; }
+    #console.open { display: block; }
+  </style>
+</head>
+<body>
+  <main class="game-frame" aria-label="Henry Stickmin Collection">
+    <iframe id="player" title="Henry Stickmin Collection" src="runtime/iframe/viewer.html?source=../../../decompiled/port-manifest.json"></iframe>
+  </main>
+  <button id="consoleButton" type="button" aria-controls="console" aria-pressed="false">Console</button>
+  <pre id="console" class="console" aria-live="polite"></pre>
+
+  <script src="air-runtime.js"></script>
+  <script>
+    (() => {
+      const consolePanel = document.querySelector("#console");
+      const consoleButton = document.querySelector("#consoleButton");
+
+      const writeLog = (message, isError = false) => {
+        const line = `[${new Date().toLocaleTimeString()}] ${message}`;
+        consolePanel.textContent += `${line}\n`;
+        consolePanel.scrollTop = consolePanel.scrollHeight;
+      };
+
+      consoleButton.addEventListener("click", () => {
+        const open = consolePanel.classList.toggle("open");
+        consoleButton.setAttribute("aria-pressed", String(open));
+      });
+      writeLog(`AIR bridge ready: ${Boolean(window.HenryAirRuntime)}`);
+      fetch("decompiled/port-manifest.json")
+        .then(response => response.json())
+        .then(manifest => writeLog(`Decompiled entry point: ${manifest.entryPoint}`))
+        .catch(error => writeLog(`Source manifest unavailable: ${error.message}`));
+      writeLog("Loading local AVM2/AIR runtime from Webport assets.");
+    })();
+  </script>
+</body>
+</html>

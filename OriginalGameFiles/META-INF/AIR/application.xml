@@ -1,0 +1,40 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<application xmlns="http://ns.adobe.com/air/application/21.0">
+  <id>com.innersloth.henry.HenryFlash</id>
+  <versionNumber>0.1</versionNumber>
+  <filename>HenryStickmin</filename>
+  <name>The Henry Stickmin Collection</name>
+  <initialWindow>
+    <title>Henry Stickmin</title>
+    <content>Henry.swf</content>
+    <systemChrome>standard</systemChrome>
+    <transparent>false</transparent>
+    <visible>true</visible>
+    <minimizable>true</minimizable>
+    <maximizable>false</maximizable>
+    <resizable>false</resizable>
+    <renderMode>direct</renderMode>
+    <x>0</x>
+    <y>0</y>
+    <maxSize>1280 720</maxSize>
+  </initialWindow>
+  <!-- 
+	More options:
+	http://livedocs.adobe.com/flex/3/html/File_formats_1.html#1043413
+	-->
+  <supportedProfiles>extendedDesktop</supportedProfiles>
+  <icon>
+    <image16x16>icons/HenryStickmin16.png</image16x16>
+    <image32x32>icons/HenryStickmin32.png</image32x32>
+    <image48x48>icons/HenryStickmin48.png</image48x48>
+    <image512x512>icons/HenryStickmin512.png</image512x512>
+    <image29x29>icons/HenryStickmin29.png</image29x29>
+  </icon>
+  <android>
+    <manifestAdditions><![CDATA[<manifest android:installLocation="auto" xmlns:android="http://schemas.android.com/apk/res/android" />]]></manifestAdditions>
+  </android>
+  <copyright>Innersloth</copyright>
+  <extensions>
+    <extensionID>com.amanitadesign.steam.FRESteamWorks</extensionID>
+  </extensions>
+</application>

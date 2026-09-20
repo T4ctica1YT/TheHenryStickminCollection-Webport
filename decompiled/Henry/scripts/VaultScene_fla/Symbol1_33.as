@@ -1,0 +1,21 @@
+package VaultScene_fla
+{
+   import flash.display.MovieClip;
+   
+   [Embed(source="/_assets/assets.swf", symbol="symbol20228")]
+   public dynamic class Symbol1_33 extends MovieClip
+   {
+      
+      public function Symbol1_33()
+      {
+         super();
+         addFrameScript(22,this.frame23);
+      }
+      
+      internal function frame23() : *
+      {
+         stop();
+      }
+   }
+}
+

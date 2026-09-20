@@ -1,0 +1,57 @@
+package bioscreen_fla
+{
+   import adobe.utils.*;
+   import com.innersloth.Helpers;
+   import com.innersloth.henry.Bios.BiosMain;
+   import flash.accessibility.*;
+   import flash.desktop.*;
+   import flash.display.*;
+   import flash.errors.*;
+   import flash.events.*;
+   import flash.external.*;
+   import flash.filters.*;
+   import flash.geom.*;
+   import flash.globalization.*;
+   import flash.media.*;
+   import flash.net.*;
+   import flash.net.drm.*;
+   import flash.printing.*;
+   import flash.profiler.*;
+   import flash.sampler.*;
+   import flash.sensors.*;
+   import flash.system.*;
+   import flash.text.*;
+   import flash.text.engine.*;
+   import flash.text.ime.*;
+   import flash.ui.*;
+   import flash.utils.*;
+   import flash.xml.*;
+   
+   [Embed(source="/_assets/assets.swf", symbol="symbol38482")]
+   public dynamic class _8Small_555 extends MovieClip
+   {
+      
+      public var self:*;
+      
+      public function _8Small_555()
+      {
+         super();
+         addFrameScript(0,this.frame1);
+      }
+      
+      internal function frame1() : *
+      {
+         stop();
+         if(!this.hasEventListener(MouseEvent.CLICK))
+         {
+            Helpers.CreateButton(this,true,false);
+            this.self = this;
+            this.addEventListener(MouseEvent.CLICK,function(param1:MouseEvent):*
+            {
+               BiosMain.instance.GotoSubPage(self.name);
+            });
+         }
+      }
+   }
+}
+
