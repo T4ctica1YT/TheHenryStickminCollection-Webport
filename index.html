@@ -9,41 +9,143 @@
     html, body { width: 100%; height: 100%; margin: 0; }
     body { display: grid; place-items: center; overflow: hidden; background: #111; }
     .game-frame { width: min(1280px, 100vw); aspect-ratio: 16 / 9; background: #000; }
-    #player { display: block; width: 100%; height: 100%; border: 0; }
-    #consoleButton { position: fixed; right: 14px; bottom: 14px; z-index: 3; padding: 8px 12px; border: 1px solid #747474; border-radius: 4px; background: #202020; color: #fff; font: 14px Consolas, monospace; cursor: pointer; }
-    #console { position: fixed; right: 14px; bottom: 58px; z-index: 2; display: none; width: min(620px, calc(100vw - 28px)); max-height: 30vh; overflow: auto; padding: 10px; border: 1px solid #747474; border-radius: 4px; background: rgba(0, 0, 0, .94); color: #c6e7c0; font: 12px/1.45 Consolas, monospace; white-space: pre-wrap; }
+    .game-frame > iframe, .game-frame > ruffle-player { display: block; width: 100%; height: 100%; border: 0; }
+    #consoleBar { position: fixed; right: 14px; bottom: 14px; z-index: 3; display: flex; gap: 8px; }
+    #consoleBar button { padding: 8px 12px; border: 1px solid #747474; border-radius: 4px; background: #202020; color: #fff; font: 14px Consolas, monospace; cursor: pointer; }
+    #consoleBar button:focus-visible { outline: 2px solid #8fb8ff; outline-offset: 2px; }
+    #consoleButton.has-errors { border-color: #d66; color: #ffb3b3; }
+    #console { position: fixed; right: 14px; bottom: 58px; z-index: 2; display: none; width: min(820px, calc(100vw - 28px)); max-height: 45vh; overflow: auto; padding: 10px; border: 1px solid #747474; border-radius: 4px; background: rgba(0, 0, 0, .94); color: #c6e7c0; font: 12px/1.45 Consolas, monospace; }
     #console.open { display: block; }
+    #console .ln { white-space: pre-wrap; overflow-wrap: anywhere; }
+    #console .ln.ok { color: #8fe3a2; }
+    #console .ln.warn { color: #ffd479; }
+    #console .ln.error { color: #ff9b9b; }
   </style>
 </head>
 <body>
-  <main class="game-frame" aria-label="Henry Stickmin Collection">
-    <iframe id="player" title="Henry Stickmin Collection" src="runtime/iframe/viewer.html?source=../../../decompiled/port-manifest.json"></iframe>
-  </main>
-  <button id="consoleButton" type="button" aria-controls="console" aria-pressed="false">Console</button>
-  <pre id="console" class="console" aria-live="polite"></pre>
+  <main class="game-frame" id="stage" aria-label="Henry Stickmin Collection"></main>
+  <div id="consoleBar">
+    <button id="copyButton" type="button">Copy log</button>
+    <button id="consoleButton" type="button" aria-controls="console" aria-pressed="false">Console</button>
+  </div>
+  <div id="console" class="console" role="log" aria-live="polite"></div>
 
   <script src="air-runtime.js"></script>
+  <script src="boot-diagnostics.js"></script>
+  <script src="runtime/iframe/reporter.js"></script>
   <script>
     (() => {
-      const consolePanel = document.querySelector("#console");
+      // Which engine runs the game. Override with ?runtime=shumway or ?runtime=ruffle.
+      const DEFAULT_RUNTIME = "ruffle";
+
+      const D = window.HenryDiag;
+      const params = new URLSearchParams(location.search);
+      const runtime = (params.get("runtime") || DEFAULT_RUNTIME).toLowerCase();
+      const stage = document.querySelector("#stage");
+      const panel = document.querySelector("#console");
       const consoleButton = document.querySelector("#consoleButton");
+      const copyButton = document.querySelector("#copyButton");
 
-      const writeLog = (message, isError = false) => {
-        const line = `[${new Date().toLocaleTimeString()}] ${message}`;
-        consolePanel.textContent += `${line}\n`;
-        consolePanel.scrollTop = consolePanel.scrollHeight;
-      };
-
-      consoleButton.addEventListener("click", () => {
-        const open = consolePanel.classList.toggle("open");
+      const setOpen = (open) => {
+        panel.classList.toggle("open", open);
         consoleButton.setAttribute("aria-pressed", String(open));
+      };
+      D.mountConsole(panel, {
+        onEntry: (entry) => {
+          if (entry.level !== "error") return;
+          consoleButton.classList.add("has-errors");
+          consoleButton.textContent = `Console (${D.counts.error})`;
+          if (D.counts.error === 1) setOpen(true);
+        }
       });
-      writeLog(`AIR bridge ready: ${Boolean(window.HenryAirRuntime)}`);
-      fetch("decompiled/port-manifest.json")
-        .then(response => response.json())
-        .then(manifest => writeLog(`Decompiled entry point: ${manifest.entryPoint}`))
-        .catch(error => writeLog(`Source manifest unavailable: ${error.message}`));
-      writeLog("Loading local AVM2/AIR runtime from Webport assets.");
+      D.installFrameBridge();
+      consoleButton.addEventListener("click", () => setOpen(!panel.classList.contains("open")));
+      copyButton.addEventListener("click", async () => {
+        copyButton.textContent = (await D.copyLog()) ? "Copied" : "Copy failed";
+        setTimeout(() => { copyButton.textContent = "Copy log"; }, 1500);
+      });
+
+      const loadScript = (src) => new Promise((resolve, reject) => {
+        const s = document.createElement("script");
+        s.src = src;
+        s.onload = resolve;
+        s.onerror = () => reject(new Error(`could not load ${src}`));
+        document.head.appendChild(s);
+      });
+
+      // ── Shumway: the original approach, two nested iframes (graphics + player) ──
+      function bootShumway() {
+        const frame = document.createElement("iframe");
+        frame.id = "player";
+        frame.title = "Henry Stickmin Collection";
+        frame.allow = "autoplay; fullscreen; gamepad";
+        frame.src = "runtime/iframe/viewer.html?source=../../../decompiled/port-manifest.json";
+        const t0 = performance.now();
+        let started = false;
+        frame.addEventListener("load", () => {
+          try {
+            frame.contentDocument.addEventListener("shumwaystarted", () => {
+              started = true;
+              D.log("ok", `Shumway reported the player started after ${((performance.now() - t0) / 1000).toFixed(1)} s`);
+            });
+          } catch (e) { D.log("warn", `cannot watch the viewer frame: ${e.message}`); }
+        });
+        stage.appendChild(frame);
+        setTimeout(() => {
+          if (!started) D.log("warn", "No 'player started' signal after 30 s. Large SWFs take a while to download and parse; if there is no error above, check the [boot] lines for the last step that completed.");
+        }, 30000);
+      }
+
+      // ── Ruffle: AIR mode, SWFs patched with the ANE stubs by tools/patch-swfs.mjs ──
+      async function bootRuffle() {
+        const assets = new URL("assets/web/", location.href).href;
+        window.RufflePlayer = window.RufflePlayer || {};
+        window.RufflePlayer.config = {
+          publicPath: new URL("runtime-ruffle/", location.href).href,
+          base: assets,                   // relative URLs inside the game resolve here, like AIR's app directory
+          playerRuntime: "air",           // emulate Adobe AIR (File, NativeApplication, ...)
+          logLevel: params.get("loglevel") || "info",
+          contextMenu: "off",
+          letterbox: "on",
+          allowFullscreen: true,
+          warnOnUnsupportedContent: false,
+          maxExecutionDuration: 60,       // the default 15 s "script is slow" limit is short for a big AIR game
+          urlRewriteRules: [[/^app:\/(.*)$/, assets + "$1"]]   // in case the game builds app:/ URLs
+        };
+        await loadScript("runtime-ruffle/ruffle.js");
+        const source = window.RufflePlayer.newest();
+        const player = source.createPlayer();
+        player.id = "player";
+        stage.appendChild(player);
+        window.henryPlayer = player;      // handy in devtools
+        D.log("info", `Ruffle ${source.version || "(version unknown)"} loaded; opening assets/web/Henry.swf`);
+        await player.load({ url: assets + "Henry.swf" });
+        D.log("ok", "Ruffle accepted the SWF. If the screen stays black, read the log above and Ruffle's own error panel.");
+      }
+
+      (async () => {
+        D.log("info", `Runtime: ${runtime}   Page: ${location.href}   AIR bridge ready: ${Boolean(window.HenryAirRuntime)}`);
+        if (location.protocol === "file:") {
+          D.log("error", "This page was opened from file://. Browsers block fetch/XHR there. Serve the folder over http, e.g.  python -m http.server 8000  and open http://localhost:8000/");
+          return;
+        }
+        if (runtime !== "ruffle" && runtime !== "shumway") {
+          D.log("error", `Unknown runtime "${runtime}". Use ?runtime=ruffle or ?runtime=shumway.`);
+          return;
+        }
+        const specs = runtime === "ruffle" ? D.RUFFLE_FILES : D.SHUMWAY_FILES;
+        const result = await D.checkFiles(specs);
+        if (!result.ok && !params.has("force")) {
+          D.log("error", `Not starting: ${result.problems.length} required file(s) are missing or wrong (see above). Add ?force=1 to try anyway.`);
+          setOpen(true);
+          return;
+        }
+        try {
+          if (runtime === "ruffle") await bootRuffle(); else bootShumway();
+        } catch (error) {
+          D.log("error", `Failed to start ${runtime}: ${(error && error.stack) || error}`);
+        }
+      })();
     })();
   </script>
 </body>

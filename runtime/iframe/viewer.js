@@ -36,10 +36,17 @@ function parseQueryString(qs) {
 
 function getPluginParams() {
   var params = parseQueryString(window.location.search);
-  var source = params.source;
+  var assetsUrl = new URL("../../assets/", document.location.href).href;
+  // ?source=... (used by index.html) means "the game": assets/Henry.swf. ?swf=... loads any other movie.
+  var movieUrl = params.swf ? new URL(params.swf, document.location.href).href :
+                 params.source ? assetsUrl + "Henry.swf" : undefined;
+  // Relative URLs inside the game (Loader.load("HenryCtM.swf"), File.applicationDirectory.resolvePath(...).url)
+  // must resolve against the directory the SWF lives in, exactly like AIR resolves them against the app
+  // directory. It used to be the URL of viewer.html, which turned "HenryCtM.swf" into runtime/iframe/HenryCtM.swf.
+  var baseUrl = params.base || (movieUrl ? new URL(".", movieUrl).href : document.location.href);
   return {
-    baseUrl: params.base || document.location.href,
-    url: source ? new URL("../../assets/Henry.swf", document.location.href).href : params.swf,
+    baseUrl: baseUrl,
+    url: movieUrl,
     movieParams: {},
     objectParams: {},
     compilerSettings: {
@@ -70,6 +77,7 @@ function runViewer(params) {
     bgcolor: undefined,
     displayParameters: easel.getDisplayParameters()
   };
+  console.info("[boot] starting player for " + flashParams.url + " (base " + flashParams.baseUrl + ")");
   playerWindow.runSwfPlayer(flashParams, null, gfxWindow);
 }
 
@@ -104,4 +112,7 @@ playerReady.then(function() {
   } else {
     runViewer(flashParams);
   }
+}).catch(function (error) {
+  // Without this a failure here (e.g. viewerGfx.js did not load, so createEasel is missing) is silent.
+  console.error("[boot] FAILED while starting the viewer: " + ((error && error.stack) || error));
 });

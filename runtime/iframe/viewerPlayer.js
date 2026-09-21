@@ -22,16 +22,36 @@ var viewerPlayerglobalInfo = {
 };
 
 var builtinPath = "../build/libs/builtin.abc";
+var airLibraryPath = "../build/libs/air.abc";
 
 window.print = function (msg) {
   console.log(msg);
 };
+
+// Shumway replaces Math.random with a fixed-seed generator (handy for reproducible tests, wrong for a game:
+// every run would roll the same "random" numbers). Use real randomness instead.
+if (window.crypto && crypto.getRandomValues) {
+  var randomWords = new Uint32Array(2);
+  Math.random = function () {
+    crypto.getRandomValues(randomWords);
+    return (randomWords[0] * 2097152 + (randomWords[1] >>> 11)) / 9007199254740992;
+  };
+}
 
 Shumway.Telemetry.instance = {
   reportTelemetry: function (data) { }
 };
 
 var player;
+
+function step(message) {
+  console.info("[boot] " + message);
+}
+
+function fatal(stage, error) {
+  console.error("[boot] FAILED while " + stage + ": " + ((error && (error.stack || error.message)) || error));
+  try { document.body.style.backgroundColor = "#7a1f1f"; } catch (e) { /* ignore */ }
+}
 
 // Feed the existing Shumway reader contract from a standard Fetch buffer.
 Shumway.BinaryFileReader.prototype.readAsync = function (ondata, onerror, onopen, oncomplete, onhttpstatus) {
@@ -118,20 +138,28 @@ function runSwfPlayer(flashParams, settings, gfxWindow) {
   var asyncLoading = true;
   var baseUrl = flashParams.baseUrl;
   var movieUrl = flashParams.url;
+  var stage = "starting the AVM2 runtime";
+
+  step("loading builtin.abc and playerglobal");
+  stage = "loading builtin.abc / playerglobal (runtime/build/libs, runtime/build/playerglobal)";
   Shumway.SystemResourcesLoadingService.instance =
     new Shumway.Player.BrowserSystemResourcesLoadingService(builtinPath, viewerPlayerglobalInfo);
   Shumway.createSecurityDomain(Shumway.AVM2LoadLibrariesFlags.Builtin | Shumway.AVM2LoadLibrariesFlags.Playerglobal).then(function (securityDomain) {
-    return fetch("../build/libs/air.abc").then(function (response) {
+    step("builtin + playerglobal ready; loading air.abc");
+    stage = "loading air.abc (the AIR / ANE stub classes)";
+    return fetch(airLibraryPath).then(function (response) {
       if (!response.ok) {
-        throw new Error("AIR compatibility library failed to load: HTTP " + response.status);
+        throw new Error("air.abc failed to load: HTTP " + response.status + ". Build it with: node tools/build-air-stubs.mjs");
       }
       return response.arrayBuffer();
     }).then(function (buffer) {
       var airABC = new Shumway.AVMX.ABCFile({ url: 'air.abc', app: securityDomain.system }, new Uint8Array(buffer));
       securityDomain.system.loadAndExecuteABC(airABC);
+      step("air.abc loaded (" + buffer.byteLength + " bytes)");
       return securityDomain;
     });
   }).then(function (securityDomain) {
+    stage = "starting the player / loading " + movieUrl;
     function runSWF(file, buffer, baseUrl) {
       var movieParams = flashParams.movieParams;
       var objectParams = flashParams.objectParams;
@@ -146,12 +174,14 @@ function runSwfPlayer(flashParams, settings, gfxWindow) {
       player.displayParameters = flashParams.displayParameters;
 
       player.pageUrl = baseUrl;
+      step("player.load(" + file + ")");
       player.load(file, buffer);
 
       var parentDocument = window.parent.document;
       var event = parentDocument.createEvent('CustomEvent');
       event.initCustomEvent('shumwaystarted', true, true, null);
       parentDocument.dispatchEvent(event);
+      step("player started; the game is now running inside Shumway");
       document.body.style.backgroundColor = 'green';
     }
 
@@ -168,11 +198,14 @@ function runSwfPlayer(flashParams, settings, gfxWindow) {
     } else {
       new Shumway.BinaryFileReader(movieUrl).readAll(null, function(buffer, error) {
         if (!buffer) {
-          throw "Unable to open the file " + file + ": " + error;
+          throw "Unable to open the file " + movieUrl + ": " + error;
         }
         runSWF(movieUrl, buffer, baseUrl);
       });
     }
+  }).catch(function (error) {
+    // Previously nothing caught a failure in this chain, which is why the page just stayed blank.
+    fatal(stage, error);
   });
 }
 
